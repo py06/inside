@@ -2,11 +2,11 @@
 
 setup:
  - ATmel avr atmega328p
- - I2C io expander for lcd (waveshare PCF8574)
- - LCD 16x2 blue (HD44780U) thru I2C io expander
- to limit pin used
+ - I2C io expander for lcd (waveshare PCF8574) - i2c @0x38
+ - LCD 16x2 blue (HD44780U) thru I2C io expander to limit pins used
  - DHT22 temperature and humidity sensor (analog)
- - RTC i2c module for time keeping and timestamping
+ - RTC i2c module for time keeping and timestamping - i2c @0x68
+ - AT24C32 eeprom (with rtc module) to store a few data - 32kB - i2c @0x57
  - Push buttons on digital pins for small keyboard
 
  Copyright 2017 Pierre-Yves Kerbrat
