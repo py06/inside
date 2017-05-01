@@ -26,12 +26,12 @@ setup:
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include <dht.h>
-#include <DS3232RTC.h>
-#include <Time.h>
+#include "rtc.h"
+#include "keypad.h"
 
 #define AREF_VOLTAGE 3.3
 #define TEMP_PIN 13
-#define LED_PINi 12
+#define LED_PIN 12
 #define LIGHT_SENSOR A0
 
 int led_state = LOW;
@@ -39,31 +39,6 @@ int led_state = LOW;
 /* initialize the library with the numbers of the interface pins */
 LiquidCrystal_I2C lcd(0x38, 16, 2);
 dht DHT;
-
-void printDigits(int digits)
-{
-	//utility function for digital clock display: prints preceding
-	//colon and leading 0
-	Serial.print(':');
-	if(digits < 10)
-		Serial.print('0');
-	Serial.print(digits);
-}
-
-void digitalClockDisplay(void)
-{
-	//digital clock display of the time
-	Serial.print(hour());
-	printDigits(minute());
-	printDigits(second());
-	Serial.print(' ');
-	Serial.print(day());
-	Serial.print(' ');
-	Serial.print(month());
-	Serial.print(' ');
-	Serial.print(year());
-	Serial.println();
-}
 
 void setup()
 {
@@ -73,29 +48,51 @@ void setup()
 
 	Serial.begin(115200);
 
-	setSyncProvider(RTC.get);   // the function to get the time from the RTC
-	if(timeStatus() != timeSet)
-		Serial.println("Unable to sync with the RTC");
-	else
-		Serial.println("RTC has set the system time");
+	rtc_init();
 
+	/* Configure LED pin as output */
+	pinMode(LED_PIN, OUTPUT);
+	led_state = LOW;
+	digitalWrite(LED_PIN, led_state);
+
+	/* Configure VLD_BTN pin as input */
+	pinMode(VLD_BTN, INPUT);
 
 	// set up the LCD's number of columns and rows:
 	lcd.begin();
 	lcd.backlight();
 
-	lcd.clear();                  // start with a blank screen
-	lcd.setCursor(0,0);           // set cursor to column 0, row 0 (the first row)
-	lcd.print("LM35 v2");    // change text to whatever you like. keep it clean!
-	lcd.setCursor(0,1);           // set cursor to column 0, row 1
+	lcd.clear();
+	lcd.setCursor(0,0);
+	lcd.print("INDISE");
+	lcd.setCursor(0,1);
 	lcd.print("peewhy.net");
 	delay(2000);
 
 }
 
+
 void loop()
 {
-	digitalClockDisplay();
-	delay(1000);
+	static unsigned long timer = millis();
+	static int deciSeconds = 0;
+	static int vldSts = 0;
+
+	if (millis() >= timer) {
+		deciSeconds++; /* 1000 ms is equal to 10 deciSecond */
+		timer += 1000;
+		if (deciSeconds == 10000) /* Reset to 0 after 1000 seconds. */
+			deciSeconds = 0;
+		vldSts = get_validButton();
+		Serial.print("Valid = ");
+		Serial.println(vldSts);
+
+		rtc_digitalClockDisplay();
+		if (led_state == HIGH)
+			led_state = LOW;
+		else
+			led_state = HIGH;
+		digitalWrite(LED_PIN, led_state);
+	}
 }
 
