@@ -1,4 +1,5 @@
 EESchema Schematic File Version 2
+LIBS:inside-rescue
 LIBS:power
 LIBS:device
 LIBS:transistors
@@ -10,7 +11,6 @@ LIBS:cmos4000
 LIBS:adc-dac
 LIBS:memory
 LIBS:xilinx
-LIBS:special
 LIBS:microcontrollers
 LIBS:dsp
 LIBS:microchip
@@ -29,14 +29,14 @@ LIBS:opto
 LIBS:atmel
 LIBS:contrib
 LIBS:valves
-LIBS:mq135
-LIBS:sensors
-LIBS:crumpschemes
 LIBS:maxim
-LIBS:Arduino_Pro_Mini-cache
 LIBS:switches
+LIBS:crumpschemes
+LIBS:sensors
+LIBS:misc
+LIBS:nodemcu
 LIBS:inside-cache
-EELAYER 27 0
+EELAYER 25 0
 EELAYER END
 $Descr A4 11693 8268
 encoding utf-8
@@ -50,17 +50,6 @@ Comment2 ""
 Comment3 ""
 Comment4 ""
 $EndDescr
-$Comp
-L DHT22_TEMPERATURE_HUMIDITY TH?
-U 1 1 58FF439D
-P 9900 2250
-F 0 "TH?" H 9900 3300 60  0000 C CNN
-F 1 "DHT22_TEMPERATURE_HUMIDITY" H 9900 3200 60  0000 C CNN
-F 2 "" H 9900 2250 60  0000 C CNN
-F 3 "" H 9900 2250 60  0000 C CNN
-	1    9900 2250
-	1    0    0    -1  
-$EndComp
 $Comp
 L LCD16X2 DS?
 U 1 1 58FF43C1
@@ -252,7 +241,7 @@ F 3 "" H 3800 4600 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L R_VARIABLE 10K
+L R_Variable 10K
 U 1 1 58FF61D2
 P 3800 5000
 F 0 "10K" V 3900 4900 50  0000 L CNN
@@ -548,24 +537,13 @@ $EndComp
 Wire Wire Line
 	8850 5700 8850 5950
 Connection ~ 8850 5800
-$Comp
-L ARDUINO_PRO_MINI U?
-U 1 1 58FF7EDC
-P 5800 4850
-F 0 "U?" H 5500 5600 60  0000 C CNN
-F 1 "ARDUINO_PRO_MINI" H 5800 2900 60  0000 C CNN
-F 2 "" H 5800 4850 60  0000 C CNN
-F 3 "" H 5800 4850 60  0000 C CNN
-	1    5800 4850
-	1    0    0    -1  
-$EndComp
 Text GLabel 6750 5850 2    60   Input ~ 0
 TH
 Wire Wire Line
 	6400 5850 6750 5850
 Connection ~ 9750 4900
 $Comp
-L BATTERY BT?
+L Battery BT?
 U 1 1 58FF818A
 P 10550 5600
 F 0 "BT?" H 10650 5700 50  0000 L CNN
@@ -773,7 +751,7 @@ Wire Wire Line
 Wire Notes Line
 	550  2800 4550 2800
 $Comp
-L SW_PUSH_DUAL SW?
+L SW_Push_Dual SW?
 U 1 1 58FF9459
 P 5800 2050
 F 0 "SW?" H 5850 2150 50  0000 L CNN
@@ -784,7 +762,7 @@ F 3 "" H 5800 2250 50  0001 C CNN
 	1    0    0    -1  
 $EndComp
 $Comp
-L SW_PUSH_DUAL SW?
+L SW_Push_Dual SW?
 U 1 1 58FF9477
 P 5800 900
 F 0 "SW?" H 5850 1000 50  0000 L CNN
@@ -885,7 +863,7 @@ Wire Wire Line
 Wire Wire Line
 	6450 2250 6450 2450
 $Comp
-L SW_PUSH_DUAL SW?
+L SW_Push_Dual SW?
 U 1 1 58FF9C10
 P 7500 1450
 F 0 "SW?" H 7550 1550 50  0000 L CNN
@@ -989,4 +967,26 @@ F 3 "" H 4500 3750 50  0001 C CNN
 $EndComp
 Text Notes 5200 3750 2    60   ~ 0
 range 5V-12V
+$Comp
+L Arduino_Pro_Mini U?
+U 1 1 5908F849
+P 5800 4850
+F 0 "U?" H 5500 5600 60  0000 C CNN
+F 1 "Arduino_Pro_Mini" H 5800 2900 60  0000 C CNN
+F 2 "" H 5800 4850 60  0000 C CNN
+F 3 "" H 5800 4850 60  0000 C CNN
+	1    5800 4850
+	1    0    0    -1  
+$EndComp
+$Comp
+L DHT22_Temperature_Humidity TH?
+U 1 1 5908FC51
+P 9900 2250
+F 0 "TH?" H 9900 3300 60  0000 C CNN
+F 1 "DHT22_Temperature_Humidity" H 9900 3200 60  0000 C CNN
+F 2 "" H 9900 2250 60  0000 C CNN
+F 3 "" H 9900 2250 60  0000 C CNN
+	1    9900 2250
+	1    0    0    -1  
+$EndComp
 $EndSCHEMATC
