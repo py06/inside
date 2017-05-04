@@ -115,12 +115,16 @@ void loop()
 		sts = DHT.read22(TEMP_PIN);
 
 		vldSts = get_validButton();
-		Serial.print("Valid = ");
+		Serial.print("Valid button = ");
 		Serial.println(vldSts);
-		Serial.print("light = ");
-		Serial.print(lightlvl);
+		Serial.print(" light = ");
+		Serial.println(lightlvl);
 		Serial.print(" CO2 = ");
 		Serial.println(co2lvl);
+		Serial.print(" temp = ");
+		Serial.println(DHT.temperature);
+		Serial.print(" humidity = ");
+		Serial.println(DHT.humidity);
 
 		rtc_digitalClockDisplay();
 		if (led_state == HIGH)
