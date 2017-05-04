@@ -102,6 +102,7 @@ void loop()
 	static int vldSts = 0;
 	static float co2lvl = 0;
 	static float lightlvl = 0;
+	int sts = 0;
 
 	if (millis() >= timer) {
 		deciSeconds++; /* 1000 ms is equal to 10 deciSecond */
@@ -111,6 +112,7 @@ void loop()
 		/* Get sensor values */
 		co2lvl = analogRead(CO2_SENSOR);
 		lightlvl = analogRead(LIGHT_SENSOR);
+		sts = DHT.read22(TEMP_PIN);
 
 		vldSts = get_validButton();
 		Serial.print("Valid = ");
