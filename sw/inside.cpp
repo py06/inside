@@ -26,6 +26,8 @@ setup:
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
 #include <dht.h>
+#include <Timer.h>
+#include <Time.h>
 #include "rtc.h"
 #include "keypad.h"
 
@@ -35,14 +37,36 @@ setup:
 #define LIGHT_SENSOR A0
 #define CO2_SENSOR A1
 
-int led_state = LOW;
+#define UNKNOWN_STATE -1
+#define SET_DATE 0
+#define SET_TIME 1
+
+#define UNKNOWN_SCREEN -1
+#define FIRST_SCREEN 0
+#define SECOND_SCREEN 1
+#define THIRD_SCREEN 2
+#define MAX_SCREEN (THIRD_SCREEN + 1)
+
 
 /* initialize the library with the numbers of the interface pins */
 LiquidCrystal_I2C lcd(0x38, 16, 2);
 dht DHT;
+Timer t;
+
+int refreshEvent, ledEvent, sensorEvent;
+int screen_id = FIRST_SCREEN;
+int settings_state = UNKNOWN_STATE;
+
+static float co2lvl = 0;
+static float lightlvl = 0;
+
+static void refresh_screen(void);
+static void get_sensor_data(void);
 
 void setup()
 {
+	int sts = 0;
+
 	analogReference(EXTERNAL); /*tell analog input to use an external
 	       			voltage ref and tie AREF pin to some
 	       			voltage (3.3 in my case) */
@@ -52,10 +76,10 @@ void setup()
 	rtc_init();
 	init_keypad();
 
+	init_keypad();
+
 	/* Configure LED pin as output */
 	pinMode(LED_PIN, OUTPUT);
-	led_state = LOW;
-	digitalWrite(LED_PIN, led_state);
 
 	/* Configure VLD_BTN pin as input */
 	pinMode(VLD_BTN, INPUT);
@@ -63,6 +87,15 @@ void setup()
 	/* Configure LIGHT & CO2 sensor pins as input */
 	pinMode(CO2_SENSOR, INPUT);
 	pinMode(LIGHT_SENSOR, INPUT);
+
+	/* try to get first read values ready before display */
+	co2lvl = analogRead(CO2_SENSOR);
+	lightlvl = analogRead(LIGHT_SENSOR);
+	sts = DHT.read22(TEMP_PIN);
+	if (sts) {
+		Serial.print("Error reading DHT22: ");
+		Serial.println(sts);
+	}
 
 	// set up the LCD's number of columns and rows:
 	lcd.begin();
@@ -75,48 +108,110 @@ void setup()
 	lcd.print("peewhy.net");
 	delay(2000);
 
+	ledEvent = t.oscillate(LED_PIN, 1000, HIGH);
+	refreshEvent = t.every(3000, refresh_screen);
+	sensorEvent = t.every(1000, get_sensor_data);
+}
+
+static void get_sensor_data()
+{
+	int sts = 0;
+
+	/* Get sensor values */
+	co2lvl = analogRead(CO2_SENSOR);
+	lightlvl = analogRead(LIGHT_SENSOR);
+	sts = DHT.read22(TEMP_PIN);
+	if (sts)
+		Serial.print("Error reading DHT22: ");
+		Serial.println(sts);
 }
 
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 			  int light, int co2lvl)
 {
-	lcd.clear();
-	lcd.setCursor(0,0);
-	lcd.print("t:");
-	lcd.print(temp);
-	lcd.print("C  ");
-	lcd.print(" l:");
-	lcd.print(light);
-	lcd.setCursor(0,1);
-	lcd.print("h:");
-	lcd.print(hum);
-	lcd.print("%");
-	lcd.print(" CO2:");
-	lcd.print(co2lvl);
-	lcd.print(" ppm");
+	switch(screen_id) {
+	case FIRST_SCREEN:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print(day());
+		lcd.print("/");
+		lcd.print(month());
+		lcd.print("/");
+		lcd.print(year());
+		lcd.setCursor(0,1);
+		lcd.print(hour());
+		lcd.print(":");
+		lcd.print(minute());
+		break;
+	case SECOND_SCREEN:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("temp:");
+		lcd.print(temp);
+		lcd.print("C");
+		lcd.setCursor(0,1);
+		lcd.print("humidity:");
+		lcd.print(hum);
+		lcd.print("%");
+		break;
+	case THIRD_SCREEN:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2:");
+		lcd.print(co2lvl);
+		lcd.print(" ppm");
+		lcd.setCursor(0,1);
+		lcd.print("light:");
+		lcd.print(light);
+		break;
+	default:
+		screen_id = UNKNOWN_SCREEN;
+		break;
+	}
+	screen_id = (screen_id + 1) % MAX_SCREEN;
 }
 
-void loop()
+static void settings_screen()
 {
-	static unsigned long timer = millis();
-	static int deciSeconds = 0;
+	switch(settings_state) {
+	case SET_DATE:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("SET DATE:");
+		lcd.setCursor(0,1);
+		lcd.print(day());
+		lcd.print("/");
+		lcd.print(month());
+		lcd.print("/");
+		lcd.print(year());
+		break;
+	case SET_TIME:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("SET TIME:");
+		lcd.setCursor(0,1);
+		lcd.print(hour());
+		lcd.print(":");
+		lcd.print(minute());
+		break;
+	default:
+	       settings_state = SET_DATE;
+	       break;
+	}
+}
+
+static void refresh_screen()
+{
+#ifdef DEBUG
 	static int vldSts = 0;
-	static float co2lvl = 0;
-	static float lightlvl = 0;
-	int sts = 0;
+#endif
 
-	if (millis() >= timer) {
-		deciSeconds++; /* 1000 ms is equal to 10 deciSecond */
-		timer += 1000;
-		if (deciSeconds == 10000) /* Reset to 0 after 1000 seconds. */
-			deciSeconds = 0;
-		/* Get sensor values */
-		co2lvl = analogRead(CO2_SENSOR);
-		lightlvl = analogRead(LIGHT_SENSOR);
-		sts = DHT.read22(TEMP_PIN);
-
-		vldSts = get_validButton();
-		Serial.print("Valid button = ");
+	if (get_displayContext() == DISPLAY_STANDARD) {
+		update_screen(lcd, DHT.temperature, DHT.humidity,
+			      lightlvl, co2lvl);
+#ifdef DEBUG
+		vldSts = keypad_status();
+		Serial.print(" keypad = ");
 		Serial.println(vldSts);
 		Serial.print(" light = ");
 		Serial.println(lightlvl);
@@ -126,17 +221,20 @@ void loop()
 		Serial.println(DHT.temperature);
 		Serial.print(" humidity = ");
 		Serial.println(DHT.humidity);
-
 		rtc_digitalClockDisplay();
-		if (led_state == HIGH)
-			led_state = LOW;
-		else
-			led_state = HIGH;
-		digitalWrite(LED_PIN, led_state);
-		update_screen(lcd, DHT.temperature, DHT.humidity, lightlvl,
-			      co2lvl);
+		Serial.println("");
+#endif
+
+	} else {
+		settings_screen();
 	}
 	manage_keypad();
 
+}
+
+
+void loop()
+{
+	t.update();
 }
 
