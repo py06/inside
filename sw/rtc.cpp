@@ -6,10 +6,12 @@
 void rtc_init()
 {
 	setSyncProvider(RTC.get);   // the function to get the time from the RTC
+#ifdef DEBUG
 	if(timeStatus() != timeSet)
 		Serial.println("Unable to sync with the RTC");
 	else
 		Serial.println("RTC has set the system time");
+#endif
 }
 
 void rtc_printDigits(int digits)
@@ -24,6 +26,7 @@ void rtc_printDigits(int digits)
 
 void rtc_digitalClockDisplay(void)
 {
+#ifdef DEBUG_VERBOSE
 	//digital clock display of the time
 	Serial.print(hour());
 	rtc_printDigits(minute());
@@ -35,5 +38,6 @@ void rtc_digitalClockDisplay(void)
 	Serial.print(' ');
 	Serial.print(year());
 	Serial.println();
+#endif
 }
 
