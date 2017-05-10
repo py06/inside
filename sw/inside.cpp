@@ -25,14 +25,14 @@ setup:
 
 #include <Arduino.h>
 #include <LiquidCrystal_I2C.h>
-#include <dht.h>
+#include <idDHTLib.h>
 #include <Timer.h>
 #include <Time.h>
 #include "rtc.h"
 #include "keypad.h"
 
 #define AREF_VOLTAGE 3.3
-#define TEMP_PIN 13
+#define TEMP_PIN 3
 #define LED_PIN 12
 #define LIGHT_SENSOR A0
 #define CO2_SENSOR A1
@@ -50,7 +50,7 @@ setup:
 
 /* initialize the library with the numbers of the interface pins */
 LiquidCrystal_I2C lcd(0x38, 16, 2);
-dht DHT;
+idDHTLib DHTLib(TEMP_PIN, idDHTLib::DHT22);
 Timer t;
 
 int refreshEvent, ledEvent, sensorEvent;
@@ -65,8 +65,6 @@ static void get_sensor_data(void);
 
 void setup()
 {
-	int sts = 0;
-
 	analogReference(EXTERNAL); /*tell analog input to use an external
 	       			voltage ref and tie AREF pin to some
 	       			voltage (3.3 in my case) */
@@ -89,13 +87,7 @@ void setup()
 	pinMode(LIGHT_SENSOR, INPUT);
 
 	/* try to get first read values ready before display */
-	co2lvl = analogRead(CO2_SENSOR);
-	lightlvl = analogRead(LIGHT_SENSOR);
-	sts = DHT.read22(TEMP_PIN);
-	if (sts) {
-		Serial.print("Error reading DHT22: ");
-		Serial.println(sts);
-	}
+	get_sensor_data();
 
 	// set up the LCD's number of columns and rows:
 	lcd.begin();
@@ -120,10 +112,13 @@ static void get_sensor_data()
 	/* Get sensor values */
 	co2lvl = analogRead(CO2_SENSOR);
 	lightlvl = analogRead(LIGHT_SENSOR);
-	sts = DHT.read22(TEMP_PIN);
-	if (sts)
+	sts = DHTLib.acquireAndWait();
+	if (sts != IDDHTLIB_OK) {
+#ifdef DEBUG
 		Serial.print("Error reading DHT22: ");
 		Serial.println(sts);
+#endif
+	}
 }
 
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
@@ -202,14 +197,15 @@ static void settings_screen()
 
 static void refresh_screen()
 {
-#ifdef DEBUG
+#ifdef DEBUG_VERBOSE
 	static int vldSts = 0;
 #endif
 
 	if (get_displayContext() == DISPLAY_STANDARD) {
-		update_screen(lcd, DHT.temperature, DHT.humidity,
+		update_screen(lcd, DHTLib.getCelsius(),
+			      DHTLib.getHumidity(),
 			      lightlvl, co2lvl);
-#ifdef DEBUG
+#ifdef DEBUG_VERBOSE
 		vldSts = keypad_status();
 		Serial.print(" keypad = ");
 		Serial.println(vldSts);
