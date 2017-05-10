@@ -59,6 +59,8 @@ int settings_state = UNKNOWN_STATE;
 
 static float co2lvl = 0;
 static float lightlvl = 0;
+static float temp = 0;
+static float humidity = 0;
 
 static void refresh_screen(void);
 static void get_sensor_data(void);
@@ -108,6 +110,7 @@ void setup()
 static void get_sensor_data()
 {
 	int sts = 0;
+	int tb, hb;
 
 	/* Get sensor values */
 	co2lvl = analogRead(CO2_SENSOR);
@@ -118,7 +121,11 @@ static void get_sensor_data()
 		Serial.print("Error reading DHT22: ");
 		Serial.println(sts);
 #endif
+	} else {
+		temp = DHTLib.getCelsius();
+		humidity = DHTLib.getHumidity();
 	}
+
 }
 
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
@@ -141,22 +148,22 @@ static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 	case SECOND_SCREEN:
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.print("temp:");
+		lcd.print("temp: ");
 		lcd.print(temp);
 		lcd.print("C");
 		lcd.setCursor(0,1);
-		lcd.print("humidity:");
+		lcd.print("humidity: ");
 		lcd.print(hum);
 		lcd.print("%");
 		break;
 	case THIRD_SCREEN:
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.print("CO2:");
+		lcd.print("CO2: ");
 		lcd.print(co2lvl);
 		lcd.print(" ppm");
 		lcd.setCursor(0,1);
-		lcd.print("light:");
+		lcd.print("light: ");
 		lcd.print(light);
 		break;
 	default:
@@ -202,8 +209,7 @@ static void refresh_screen()
 #endif
 
 	if (get_displayContext() == DISPLAY_STANDARD) {
-		update_screen(lcd, DHTLib.getCelsius(),
-			      DHTLib.getHumidity(),
+		update_screen(lcd, temp, humidity,
 			      lightlvl, co2lvl);
 #ifdef DEBUG_VERBOSE
 		vldSts = keypad_status();
@@ -214,9 +220,9 @@ static void refresh_screen()
 		Serial.print(" CO2 = ");
 		Serial.println(co2lvl);
 		Serial.print(" temp = ");
-		Serial.println(DHT.temperature);
+		Serial.println(temp);
 		Serial.print(" humidity = ");
-		Serial.println(DHT.humidity);
+		Serial.println(humidity);
 		rtc_digitalClockDisplay();
 		Serial.println("");
 #endif
