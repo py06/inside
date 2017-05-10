@@ -14,6 +14,18 @@ void rtc_init()
 #endif
 }
 
+void rtc_getDateStr(char *date)
+{
+	sprintf(date, "%s ", dayShortStr(weekday()));
+	if (day() < 10)
+		sprintf(date + 4, "0%d ", day());
+	else
+		sprintf(date + 4, "%2d ", day());
+
+	sprintf(date + 7, "%s ", monthShortStr(month()));
+	sprintf(date + 11,"%4d", year());
+}
+
 void rtc_printDigits(int digits)
 {
 	//utility function for digital clock display: prints preceding
