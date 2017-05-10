@@ -110,7 +110,6 @@ void setup()
 static void get_sensor_data()
 {
 	int sts = 0;
-	int tb, hb;
 
 	/* Get sensor values */
 	co2lvl = analogRead(CO2_SENSOR);
@@ -131,15 +130,14 @@ static void get_sensor_data()
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 			  int light, int co2lvl)
 {
+	char date[16];
+
 	switch(screen_id) {
 	case FIRST_SCREEN:
 		lcd.clear();
 		lcd.setCursor(0,0);
-		lcd.print(day());
-		lcd.print("/");
-		lcd.print(month());
-		lcd.print("/");
-		lcd.print(year());
+		rtc_getDateStr(date);
+		lcd.print(date);
 		lcd.setCursor(0,1);
 		lcd.print(hour());
 		lcd.print(":");
