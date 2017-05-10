@@ -9,7 +9,7 @@ MONITOR_PORT  = /dev/ttyACM0
 ISP_PORT = /dev/ttyACM*
 
 # Required libraries for project
-ARDUINO_LIBS = LiquidCrystal_I2C DHT Wire Time DS3232RTC OneButton
+ARDUINO_LIBS = LiquidCrystal_I2C idDHTLib Wire Time DS3232RTC Timer OneButton
 
 # Avrdude conf (flash board)
 AVRDUDE      = /usr/bin/avrdude
