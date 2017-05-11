@@ -50,6 +50,7 @@ void setup()
 	Serial.begin(115200);
 
 	rtc_init();
+	init_keypad();
 
 	/* Configure LED pin as output */
 	pinMode(LED_PIN, OUTPUT);
@@ -135,5 +136,7 @@ void loop()
 		update_screen(lcd, DHT.temperature, DHT.humidity, lightlvl,
 			      co2lvl);
 	}
+	manage_keypad();
+
 }
 
