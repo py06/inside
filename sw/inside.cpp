@@ -228,13 +228,12 @@ static void refresh_screen()
 	} else {
 		settings_screen();
 	}
-	manage_keypad();
-
 }
 
 
 void loop()
 {
 	t.update();
+	manage_keypad();
 }
 
