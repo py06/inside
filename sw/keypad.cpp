@@ -40,6 +40,9 @@ void manage_keypad(){
 }
 
 static void validLongPress() {
+#ifdef DEBUG
+	Serial.println("VALID button: long press event");
+#endif
 	events |= VALID_LONG_PRESS;
 }
 
@@ -48,10 +51,16 @@ static void validPress() {
 }
 
 static void upPress() {
+#ifdef DEBUG
+	Serial.println("UP button: click event");
+#endif
 	events |= UP_PRESS;
 }
 
 static void downPress() {
+#ifdef DEBUG
+	Serial.println("DOWN button: click event");
+#endif
 	events |= DOWN_PRESS;
 }
 
