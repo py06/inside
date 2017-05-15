@@ -39,7 +39,14 @@ setup:
 
 #define UNKNOWN_STATE -1
 #define SET_DATE 0
-#define SET_TIME 1
+#define SET_DAY 1
+#define SET_MONTH 2
+#define SET_YEAR 3
+#define SET_TIME 4
+#define SET_HOUR 5
+#define SET_MINUTE 6
+#define SAVE_RTC 7
+#define MAX_SETTINGS_STATE (SAVE_RTC)
 
 #define UNKNOWN_SCREEN -1
 #define FIRST_SCREEN 0
@@ -74,7 +81,6 @@ void setup()
 	Serial.begin(115200);
 
 	rtc_init();
-	init_keypad();
 
 	init_keypad();
 
@@ -131,6 +137,7 @@ static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 			  int light, int co2lvl)
 {
 	char date[16];
+	char strHour[2], strMinute[2];
 
 	switch(screen_id) {
 	case FIRST_SCREEN:
@@ -139,9 +146,9 @@ static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 		rtc_getDateStr(date);
 		lcd.print(date);
 		lcd.setCursor(0,1);
-		lcd.print(hour());
+		lcd.print(rtc_formatNumber(strHour, hour()));
 		lcd.print(":");
-		lcd.print(minute());
+		lcd.print(rtc_formatNumber(strMinute, minute()));
 		break;
 	case SECOND_SCREEN:
 		lcd.clear();
@@ -171,28 +178,174 @@ static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 	screen_id = (screen_id + 1) % MAX_SCREEN;
 }
 
+static void handle_standard_events()
+{
+	switch(events) {
+	case VALID_LONG_PRESS:
+		context = DISPLAY_SETTINGS;
+		events &= ~(VALID_LONG_PRESS | VALID_PRESS);
+		settings_state = SET_DATE;
+		break;
+	}
+}
+
+static void handle_settings_events()
+{
+	bool state_incr = false;
+	int val = 0;
+	static int newday, newmonth, newyear;
+	static int newhour, newminute;
+	char strDay[2], strMonth[2], strHour[2], strMinute[2];
+
+	switch(events) {
+	case VALID_PRESS:
+		state_incr = true;;
+		events &= ~VALID_PRESS;
+		break;
+	case VALID_LONG_PRESS:
+		context = DISPLAY_STANDARD;
+		events &= ~(VALID_LONG_PRESS | VALID_PRESS);
+		lcd.noBlink();
+		return; /* exit abruptly in case of long press */
+	case UP_PRESS:
+		val = 1;
+		events &= ~UP_PRESS;
+		break;
+	case DOWN_PRESS:
+		val = -1;
+		events &= ~DOWN_PRESS;
+		break;
+	}
+
+	switch(settings_state) {
+	case SET_DATE:
+		newday = day();
+		newmonth = month();
+		newyear = year();
+		state_incr = true;
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("SET DATE:");
+		lcd.setCursor(0, 1);
+		lcd.print(rtc_formatNumber(strDay, day()));
+		lcd.print("/");
+		lcd.print(rtc_formatNumber(strMonth, month()));
+		lcd.print("/");
+		lcd.print(year());
+	case SET_DAY:
+		lcd.setCursor(1, 1);
+		lcd.blink();
+		newday += val;
+		if (val) { /* refresh day on screen */
+			lcd.setCursor(0, 1);
+			lcd.print(rtc_formatNumber(strDay, newday));
+			lcd.setCursor(1, 1);
+		}
+		break;
+	case SET_MONTH:
+		newmonth += val;
+		lcd.setCursor(4, 1);
+		if (val) { /* refresh day on screen */
+			lcd.setCursor(3, 1);
+			lcd.print(rtc_formatNumber(strMonth, newmonth));
+			lcd.setCursor(4, 1);
+		}
+		break;
+	case SET_YEAR:
+		newyear += val;
+		lcd.setCursor(9, 1);
+		if (val) { /* refresh day on screen */
+			lcd.setCursor(6, 1);
+			lcd.print(newyear);
+			lcd.setCursor(9, 1);
+		}
+		break;
+	case SET_TIME:
+		newhour = hour();
+		newminute = minute();
+		state_incr = true;
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("SET TIME:");
+		lcd.setCursor(0,1);
+		lcd.print(rtc_formatNumber(strHour, hour()));
+		lcd.print(":");
+		lcd.print(rtc_formatNumber(strMinute, minute()));
+	case SET_HOUR:
+		newhour += val;
+		lcd.setCursor(1, 1);
+		lcd.blink();
+		if (val) { /* refresh day on screen */
+			lcd.setCursor(0, 1);
+			lcd.print(rtc_formatNumber(strHour, newhour));
+			lcd.setCursor(1, 1);
+		}
+		break;
+	case SET_MINUTE:
+		newminute += val;
+		lcd.setCursor(4, 1);
+		lcd.blink();
+		if (val) { /* refresh day on screen */
+			lcd.setCursor(3, 1);
+			lcd.print(rtc_formatNumber(strMinute, newminute));
+			lcd.setCursor(4, 1);
+		}
+		break;
+	case SAVE_RTC:
+		setTime(newhour, newminute, second(),
+			newday, newmonth, newyear);
+		context = DISPLAY_STANDARD;
+		lcd.noBlink();
+		return;
+	}
+
+	if (state_incr)
+		settings_state = settings_state + 1;
+}
+
+static void handle_events()
+{
+	if (context == DISPLAY_STANDARD)
+		handle_standard_events();
+	else
+		handle_settings_events();
+}
+
 static void settings_screen()
 {
+	char strDay[2];
+	char strMonth[2];
+	char strHour[2];
+	char strMinute[2];
+
 	switch(settings_state) {
 	case SET_DATE:
 		lcd.clear();
 		lcd.setCursor(0,0);
 		lcd.print("SET DATE:");
 		lcd.setCursor(0,1);
-		lcd.print(day());
+		lcd.print(rtc_formatNumber(strDay, day()));
 		lcd.print("/");
-		lcd.print(month());
+		lcd.print(rtc_formatNumber(strMonth, month()));
 		lcd.print("/");
 		lcd.print(year());
+	case SET_DAY:
+	case SET_MONTH:
+	case SET_YEAR:
 		break;
 	case SET_TIME:
 		lcd.clear();
 		lcd.setCursor(0,0);
 		lcd.print("SET TIME:");
 		lcd.setCursor(0,1);
-		lcd.print(hour());
+		lcd.print(rtc_formatNumber(strHour, hour()));
 		lcd.print(":");
-		lcd.print(minute());
+		lcd.print(rtc_formatNumber(strMinute, minute()));
+	case SET_HOUR:
+	case SET_MINUTE:
+		break;
+	case SAVE_RTC:
+		context = DISPLAY_STANDARD;
 		break;
 	default:
 	       settings_state = SET_DATE;
@@ -235,5 +388,6 @@ void loop()
 {
 	t.update();
 	manage_keypad();
+	handle_events();
 }
 
