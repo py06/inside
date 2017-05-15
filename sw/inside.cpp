@@ -292,7 +292,7 @@ static void handle_settings_events()
 		}
 		break;
 	case SAVE_RTC:
-		setTime(newhour, newminute, second(),
+		rtc_saveDateTime(newhour, newminute, second(),
 			newday, newmonth, newyear);
 		context = DISPLAY_STANDARD;
 		lcd.noBlink();
