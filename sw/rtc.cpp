@@ -26,6 +26,15 @@ void rtc_getDateStr(char *date)
 	sprintf(date + 11,"%4d", year());
 }
 
+char *rtc_formatNumber(char *str, int number)
+{
+	if (number < 10)
+		sprintf(str, "0%d", number);
+	else
+		sprintf(str, "%2d", number);
+	return str;
+}
+
 void rtc_printDigits(int digits)
 {
 	//utility function for digital clock display: prints preceding
