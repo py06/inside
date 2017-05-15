@@ -14,6 +14,26 @@ void rtc_init()
 #endif
 }
 
+int rtc_saveDateTime(int hr,int min,int sec,int dy, int mnth, int yr){
+	tmElements_t tm;
+	time_t t;
+
+	if( yr > 99)
+		yr = yr - 1970;
+	else
+		yr += 30;
+	tm.Year = yr;
+	tm.Month = mnth;
+	tm.Day = dy;
+	tm.Hour = hr;
+	tm.Minute = min;
+	tm.Second = sec;
+	t = makeTime(tm);
+	RTC.set(t);
+	setTime(t);
+	return 0;
+}
+
 void rtc_getDateStr(char *date)
 {
 	sprintf(date, "%s ", dayShortStr(weekday()));
