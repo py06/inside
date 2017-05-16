@@ -1,4 +1,4 @@
-update=Tue 02 May 2017 10:54:17 PM CEST
+update=Tue 16 May 2017 04:51:51 PM CEST
 version=1
 last_client=kicad
 [general]
@@ -57,7 +57,7 @@ SpiceUseNetNumbers=0
 LabSize=60
 [eeschema]
 version=1
-LibDir=/home/pkerbrat/development/kicad/kicad-library/library;/home/pkerbrat/development/kicad/kicad-library/template;/home/pkerbrat/development/kicad/kicad-lib;/home/pkerbrat/development/kicad/CrumpSchemes
+LibDir=/home/peewhy/development/kicad/CrumpSchemes;/home/peewhy/development/kicad/kicad-lib;/home/peewhy/development/kicad/kicad-library;/home/peewhy/development/kicad/Arduino_Pro_Mini_328
 [eeschema/libraries]
 LibName1=inside-rescue
 LibName2=power

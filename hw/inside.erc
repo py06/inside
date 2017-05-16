@@ -1,0 +1,27 @@
+ERC report (Tue 16 May 2017 04:45:50 PM CEST, Encoding UTF8 )
+
+***** Sheet /
+ErrType(3): Pin connected to some others pins but no pin to drive it
+    @ (257.81 mm,142.24 mm): Pin 14 (Power input) of component U4 is not driven (Net 46).
+ErrType(3): Pin connected to some others pins but no pin to drive it
+    @ (161.29 mm,184.15 mm): Pin 1 (Power input) of component #PWR029 is not driven (Net 48).
+ErrType(3): Pin connected to some others pins but no pin to drive it
+    @ (21.59 mm,133.35 mm): Pin 1 (Power input) of component #PWR02 is not driven (Net 49).
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (58.42 mm,138.43 mm): Pin 12 (Bidirectional) of component U1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (55.88 mm,138.43 mm): Pin 11 (Bidirectional) of component U1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (53.34 mm,138.43 mm): Pin 10 (Bidirectional) of component U1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (50.80 mm,138.43 mm): Pin 9 (Bidirectional) of component U1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (63.50 mm,121.92 mm): Pin 14 (Input) of component DS1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (60.96 mm,121.92 mm): Pin 13 (Input) of component DS1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (58.42 mm,121.92 mm): Pin 12 (Input) of component DS1 is unconnected.
+ErrType(2): Pin not connected (and no connect symbol found on this pin)
+    @ (55.88 mm,121.92 mm): Pin 11 (Input) of component DS1 is unconnected.
+
+ ** ERC messages: 11  Errors 0  Warnings 11
