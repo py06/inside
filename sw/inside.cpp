@@ -28,14 +28,15 @@ setup:
 #include <idDHTLib.h>
 #include <Timer.h>
 #include <Time.h>
+#include <MQ135.h>
 #include "rtc.h"
 #include "keypad.h"
 
-#define AREF_VOLTAGE 3.3
+#define AREF_VOLTAGE 5V
 #define TEMP_PIN 3
 #define LED_PIN 12
-#define LIGHT_SENSOR A0
-#define CO2_SENSOR A1
+#define LIGHT_PIN A0
+#define CO2_PIN A1
 
 #define UNKNOWN_STATE -1
 #define SET_DATE 0
@@ -58,13 +59,14 @@ setup:
 /* initialize the library with the numbers of the interface pins */
 LiquidCrystal_I2C lcd(0x38, 16, 2);
 idDHTLib DHTLib(TEMP_PIN, idDHTLib::DHT22);
+MQ135 co2sensor(CO2_PIN);
 Timer t;
 
 int refreshEvent, ledEvent, sensorEvent;
 int screen_id = FIRST_SCREEN;
 int settings_state = UNKNOWN_STATE;
 
-static float co2lvl = 0;
+static double co2lvl = 0;
 static float lightlvl = 0;
 static float temp = 0;
 static float humidity = 0;
@@ -76,7 +78,7 @@ void setup()
 {
 	analogReference(EXTERNAL); /*tell analog input to use an external
 	       			voltage ref and tie AREF pin to some
-	       			voltage (3.3 in my case) */
+				voltage (5V in my case) */
 
 	Serial.begin(115200);
 
@@ -91,8 +93,8 @@ void setup()
 	pinMode(VLD_BTN, INPUT);
 
 	/* Configure LIGHT & CO2 sensor pins as input */
-	pinMode(CO2_SENSOR, INPUT);
-	pinMode(LIGHT_SENSOR, INPUT);
+	pinMode(CO2_PIN, INPUT);
+	pinMode(LIGHT_PIN, INPUT);
 
 	/* try to get first read values ready before display */
 	get_sensor_data();
@@ -118,8 +120,7 @@ static void get_sensor_data()
 	int sts = 0;
 
 	/* Get sensor values */
-	co2lvl = analogRead(CO2_SENSOR);
-	lightlvl = analogRead(LIGHT_SENSOR);
+	lightlvl = analogRead(LIGHT_PIN);
 	sts = DHTLib.acquireAndWait();
 	if (sts != IDDHTLIB_OK) {
 #ifdef DEBUG
@@ -131,10 +132,13 @@ static void get_sensor_data()
 		humidity = DHTLib.getHumidity();
 	}
 
+	/* compensate co2 measurment with temp & humidity */
+	/* co2lvl = co2sensor.getCorrectedPPM((float) temp, (float) humidity);*/
+	co2lvl = co2sensor.getPPM();
 }
 
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
-			  int light, int co2lvl)
+			  int light, double co2lvl)
 {
 	char date[16];
 	char strHour[2], strMinute[2];
@@ -154,18 +158,18 @@ static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
 		lcd.clear();
 		lcd.setCursor(0,0);
 		lcd.print("temp: ");
-		lcd.print(temp);
+		lcd.print(temp, 1);
 		lcd.print("C");
-		lcd.setCursor(0,1);
+		lcd.setCursor(0, 1);
 		lcd.print("humidity: ");
-		lcd.print(hum);
+		lcd.print(hum, 1);
 		lcd.print("%");
 		break;
 	case THIRD_SCREEN:
 		lcd.clear();
 		lcd.setCursor(0,0);
 		lcd.print("CO2: ");
-		lcd.print(co2lvl);
+		lcd.print(co2lvl, 2);
 		lcd.print(" ppm");
 		lcd.setCursor(0,1);
 		lcd.print("light: ");
