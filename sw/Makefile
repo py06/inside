@@ -11,7 +11,7 @@ ISP_PORT = /dev/ttyACM*
 # Required libraries for project
 ARDUINO_LIB_PATH = $(ARDUINO_DIR)/hardware/arduino/avr/libraries
 USER_LIB_PATH = $(ARDUINO_SKETCHBOOK)/libraries
-ARDUINO_LIBS = LiquidCrystal_I2C idDHTLib Wire Time DS3232RTC Timer OneButton
+ARDUINO_LIBS = LiquidCrystal_I2C idDHTLib Wire Time DS3232RTC Timer OneButton MQ135
 
 # Avrdude conf (flash board)
 AVRDUDE      = /usr/bin/avrdude
