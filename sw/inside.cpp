@@ -39,6 +39,7 @@ setup:
 #define CO2_PIN A1
 
 #define UNKNOWN_STATE -1
+
 #define SET_DATE 0
 #define SET_DAY 1
 #define SET_MONTH 2
@@ -48,6 +49,18 @@ setup:
 #define SET_MINUTE 6
 #define SAVE_RTC 7
 #define MAX_SETTINGS_STATE (SAVE_RTC)
+
+#define CALIBRATION_RZERO_ENTRY 0
+#define CALIBRATION_RZERO 1
+#define CALIBRATION_RZERO_HEATING_ENTRY 2
+#define CALIBRATION_RZERO_HEATING 3
+#define CALIBRATION_RZERO_MEASURING 4
+#define CALIBRATION_RZERO_MEASURING_1 5
+#define CALIBRATION_RZERO_MEASURING_2 6
+#define CALIBRATION_RZERO_MEASURING_3 7
+#define CALIBRATION_RZERO_STORING_ENTRY 8
+#define CALIBRATION_RZERO_STORING 9
+#define MAX_CALIBRATION_STATE (CALIB_RZERO_STORING)
 
 #define UNKNOWN_SCREEN -1
 #define FIRST_SCREEN 0
@@ -65,6 +78,7 @@ Timer t;
 int refreshEvent, ledEvent, sensorEvent;
 int screen_id = FIRST_SCREEN;
 int settings_state = UNKNOWN_STATE;
+int calib_state = UNKNOWN_STATE;
 
 static double co2lvl = 0;
 static float lightlvl = 0;
@@ -193,6 +207,134 @@ static void handle_standard_events()
 	}
 }
 
+static void heatingCompleted()
+{
+	events |= HEAT_TIMEOUT;
+}
+
+static void startMeasure()
+{
+	events |= MEAS_TIMEOUT;
+}
+
+static void handle_calibration_events()
+{
+	bool up = false, dwn = false;
+	bool heat_tmo = false, meas_tmo = false;
+	static float sumr0 = 0;
+	float r0 = 0;
+	int measEvt = 0, heatEvt = 0;
+
+	switch(events) {
+	case VALID_LONG_PRESS:
+		context = DISPLAY_STANDARD;
+		events &= ~(VALID_LONG_PRESS | VALID_PRESS);
+		break;
+	case VALID_PRESS:
+		events &= ~VALID_PRESS;
+		break;
+	case UP_PRESS:
+		up = true;
+		events &= ~UP_PRESS;
+		break;
+	case DOWN_PRESS:
+		dwn = true;
+		events &= ~DOWN_PRESS;
+		break;
+	case HEAT_TIMEOUT:
+		heat_tmo = true;
+		events &= ~HEAT_TIMEOUT;
+		break;
+	case MEAS_TIMEOUT:
+		meas_tmo = true;
+		events &= ~MEAS_TIMEOUT;
+		break;
+	}
+
+	switch(calib_state) {
+	case CALIBRATION_RZERO_ENTRY:
+		r0 = co2sensor.getRzero();
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("start Y=up N=dwn");
+		calib_state++;
+	case CALIBRATION_RZERO:
+		if (up) {
+			heatEvt = t.after(1800000, heatingCompleted);
+			calib_state++;
+		}
+		if (dwn)
+			context = DISPLAY_STANDARD;
+		break;
+	case CALIBRATION_RZERO_HEATING_ENTRY:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("heating...");
+		calib_state++;
+	case CALIBRATION_RZERO_HEATING:
+		if (heat_tmo) {
+			t.stop(heatEvt);
+			calib_state++;
+		}
+		break;
+	case CALIBRATION_RZERO_MEASURING:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("measuring...");
+		measEvt = t.after(300000, startMeasure);
+		calib_state++;
+	case CALIBRATION_RZERO_MEASURING_1:
+		if (meas_tmo) {
+			sumr0 = co2sensor.measureRZero();
+			measEvt = t.after(5000, startMeasure);
+			calib_state++;
+		}
+		break;
+	case CALIBRATION_RZERO_MEASURING_2:
+		if (meas_tmo) {
+			sumr0 += co2sensor.measureRZero();
+			measEvt = t.after(5000, startMeasure);
+			calib_state++;
+		}
+		break;
+	case CALIBRATION_RZERO_MEASURING_3:
+		if (meas_tmo) {
+			sumr0 += co2sensor.measureRZero();
+#ifdef DEBUG
+			Serial.print("Calibrated R0 = ");
+			Serial.println(sumr0 / 3);
+#endif
+			calib_state++;
+		}
+		break;
+	case CALIBRATION_RZERO_STORING_ENTRY:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("R0 = ");
+		lcd.print(sumr0 / 3, 1);
+		t.stop(measEvt);
+		calib_state++;
+	case CALIBRATION_RZERO_STORING:
+		if (up) {
+			co2sensor.setRzero(sumr0 / 3);
+			/* TBD: store RZero value in EEPROM */
+			context = DISPLAY_STANDARD;
+		}
+		if (dwn) {
+			context = DISPLAY_STANDARD;
+		}
+		break;
+	}
+}
+
 static void handle_settings_events()
 {
 	bool state_incr = false;
@@ -298,7 +440,7 @@ static void handle_settings_events()
 	case SAVE_RTC:
 		rtc_saveDateTime(newhour, newminute, second(),
 			newday, newmonth, newyear);
-		context = DISPLAY_STANDARD;
+		context = DISPLAY_CALIBRATION;
 		lcd.noBlink();
 		return;
 	}
@@ -309,10 +451,17 @@ static void handle_settings_events()
 
 static void handle_events()
 {
-	if (context == DISPLAY_STANDARD)
+	switch(context) {
+	case DISPLAY_STANDARD:
 		handle_standard_events();
-	else
+		break;
+	case DISPLAY_SETTINGS:
 		handle_settings_events();
+		break;
+	case DISPLAY_CALIBRATION:
+		handle_calibration_events();
+		break;
+	}
 }
 
 static void settings_screen()
@@ -349,10 +498,51 @@ static void settings_screen()
 	case SET_MINUTE:
 		break;
 	case SAVE_RTC:
-		context = DISPLAY_STANDARD;
+		context = DISPLAY_CALIBRATION;
 		break;
 	default:
 	       settings_state = SET_DATE;
+	       break;
+	}
+}
+
+static void calibration_screen()
+{
+	switch(calib_state) {
+	case CALIBRATION_RZERO:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("start Y=up N=dwn");
+		break;
+	case CALIBRATION_RZERO_HEATING:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("heating...");
+		break;
+	case CALIBRATION_RZERO_MEASURING:
+	case CALIBRATION_RZERO_MEASURING_1:
+	case CALIBRATION_RZERO_MEASURING_2:
+	case CALIBRATION_RZERO_MEASURING_3:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("measuring...");
+		break;
+	case CALIBRATION_RZERO_STORING:
+		lcd.clear();
+		lcd.setCursor(0,0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0,1);
+		lcd.print("R0 = ");
+		lcd.print(co2sensor.getRzero(), 1);
+		break;
+	default:
+	       calib_state = CALIBRATION_RZERO;
 	       break;
 	}
 }
@@ -363,7 +553,8 @@ static void refresh_screen()
 	static int vldSts = 0;
 #endif
 
-	if (get_displayContext() == DISPLAY_STANDARD) {
+	switch(context) {
+	case DISPLAY_STANDARD:
 		update_screen(lcd, temp, humidity,
 			      lightlvl, co2lvl);
 #ifdef DEBUG_VERBOSE
@@ -381,9 +572,13 @@ static void refresh_screen()
 		rtc_digitalClockDisplay();
 		Serial.println("");
 #endif
-
-	} else {
+		break;
+	case DISPLAY_SETTINGS:
 		settings_screen();
+		break;
+	case DISPLAY_CALIBRATION:
+		calibration_screen();
+		break;
 	}
 }
 
