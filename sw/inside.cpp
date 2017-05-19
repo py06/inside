@@ -52,14 +52,16 @@ setup:
 
 #define CALIBRATION_RZERO_ENTRY 0
 #define CALIBRATION_RZERO 1
-#define CALIBRATION_RZERO_HEATING_ENTRY 2
-#define CALIBRATION_RZERO_HEATING 3
-#define CALIBRATION_RZERO_MEASURING 4
-#define CALIBRATION_RZERO_MEASURING_1 5
-#define CALIBRATION_RZERO_MEASURING_2 6
-#define CALIBRATION_RZERO_MEASURING_3 7
-#define CALIBRATION_RZERO_STORING_ENTRY 8
-#define CALIBRATION_RZERO_STORING 9
+#define CALIBRATION_REF_ATMOCO2_ENTRY 2
+#define CALIBRATION_REF_ATMOCO2 3
+#define CALIBRATION_RZERO_HEATING_ENTRY 4
+#define CALIBRATION_RZERO_HEATING 5
+#define CALIBRATION_RZERO_MEASURING 6
+#define CALIBRATION_RZERO_MEASURING_1 7
+#define CALIBRATION_RZERO_MEASURING_2 8
+#define CALIBRATION_RZERO_MEASURING_3 9
+#define CALIBRATION_RZERO_STORING_ENTRY 10
+#define CALIBRATION_RZERO_STORING 11
 #define MAX_CALIBRATION_STATE (CALIB_RZERO_STORING)
 
 #define UNKNOWN_SCREEN -1
@@ -219,9 +221,10 @@ static void startMeasure()
 
 static void handle_calibration_events()
 {
-	bool up = false, dwn = false;
+	bool up = false, dwn = false, valid = false;
 	bool heat_tmo = false, meas_tmo = false;
 	static float sumr0 = 0;
+	static int co2ref = 0;
 	float r0 = 0;
 	int measEvt = 0, heatEvt = 0;
 
@@ -231,6 +234,7 @@ static void handle_calibration_events()
 		events &= ~(VALID_LONG_PRESS | VALID_PRESS);
 		break;
 	case VALID_PRESS:
+		valid = true;
 		events &= ~VALID_PRESS;
 		break;
 	case UP_PRESS:
@@ -255,11 +259,44 @@ static void handle_calibration_events()
 	case CALIBRATION_RZERO_ENTRY:
 		r0 = co2sensor.getRzero();
 		lcd.clear();
-		lcd.setCursor(0,0);
+		lcd.setCursor(0, 0);
 		lcd.print("CO2 calibration:");
-		lcd.setCursor(0,1);
+		lcd.setCursor(0, 1);
 		lcd.print("start Y=up N=dwn");
 		calib_state++;
+	case CALIBRATION_REF_ATMOCO2_ENTRY:
+		co2ref = (int) co2sensor.getAtmoco2();
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("Atmospheric CO2:");
+		lcd.setCursor(0, 1);
+		lcd.print(co2ref);
+		lcd.print("ppm");
+		lcd.setCursor(2, 1);
+		lcd.blink();
+		calib_state++;
+	case CALIBRATION_REF_ATMOCO2:
+		if (valid) {
+			co2sensor.setAtmoco2(co2ref);
+			lcd.noBlink();
+			calib_state++;
+		}
+		if (up) {
+			co2ref++;
+			lcd.setCursor(0, 1);
+			lcd.print(co2ref);
+			lcd.print("ppm");
+			lcd.setCursor(2, 1);
+		}
+		if (dwn) {
+			co2ref = (co2ref > 0) ? co2ref-- : co2ref;
+			lcd.setCursor(0, 1);
+			lcd.print(co2ref);
+			lcd.print("ppm");
+			lcd.setCursor(2, 1);
+		}
+
+		break;
 	case CALIBRATION_RZERO:
 		if (up) {
 			heatEvt = t.after(1800000, heatingCompleted);
@@ -516,6 +553,10 @@ static void calibration_screen()
 		lcd.setCursor(0,1);
 		lcd.print("start Y=up N=dwn");
 		break;
+	case CALIBRATION_RZERO_ENTRY:
+	case CALIBRATION_REF_ATMOCO2_ENTRY:
+	case CALIBRATION_REF_ATMOCO2:
+		break;
 	case CALIBRATION_RZERO_HEATING:
 		lcd.clear();
 		lcd.setCursor(0,0);
@@ -534,12 +575,6 @@ static void calibration_screen()
 		lcd.print("measuring...");
 		break;
 	case CALIBRATION_RZERO_STORING:
-		lcd.clear();
-		lcd.setCursor(0,0);
-		lcd.print("CO2 calibration:");
-		lcd.setCursor(0,1);
-		lcd.print("R0 = ");
-		lcd.print(co2sensor.getRzero(), 1);
 		break;
 	default:
 	       calib_state = CALIBRATION_RZERO;
