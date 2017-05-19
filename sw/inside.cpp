@@ -257,7 +257,6 @@ static void handle_calibration_events()
 
 	switch(calib_state) {
 	case CALIBRATION_RZERO_ENTRY:
-		r0 = co2sensor.getRzero();
 		lcd.clear();
 		lcd.setCursor(0, 0);
 		lcd.print("CO2 calibration:");
@@ -328,21 +327,24 @@ static void handle_calibration_events()
 		calib_state++;
 	case CALIBRATION_RZERO_MEASURING_1:
 		if (meas_tmo) {
-			sumr0 = co2sensor.measureRZero();
+			sumr0 = co2sensor.measureCorrectedRZero(temp,
+								humidity);
 			measEvt = t.after(5000, startMeasure);
 			calib_state++;
 		}
 		break;
 	case CALIBRATION_RZERO_MEASURING_2:
 		if (meas_tmo) {
-			sumr0 += co2sensor.measureRZero();
+			sumr0 += co2sensor.measureCorrectedRZero(temp,
+								 humidity);
 			measEvt = t.after(5000, startMeasure);
 			calib_state++;
 		}
 		break;
 	case CALIBRATION_RZERO_MEASURING_3:
 		if (meas_tmo) {
-			sumr0 += co2sensor.measureRZero();
+			sumr0 += co2sensor.measureCorrectedRZero(temp,
+								 humidity);
 #ifdef DEBUG
 			Serial.print("Calibrated R0 = ");
 			Serial.println(sumr0 / 3);
