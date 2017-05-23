@@ -17,8 +17,8 @@ ARDUINO_LIBS = LiquidCrystal_I2C idDHTLib Wire Time DS3232RTC Timer OneButton MQ
 AVRDUDE      = /usr/bin/avrdude
 AVRDUDE_CONF = /etc/avrdude.conf
 
-CPPFLAGS += -DDEBUG #-DDEBUG_VERBOSE
-CFLAGS += -DDEBUG #-DDEBUG_VERBOSE
+CPPFLAGS += -DDEBUG -DDEBUG_PARAM #-DDEBUG_VERBOSE
+CFLAGS += -DDEBUG  -DDEBUG_PARAM #-DDEBUG_VERBOSE
 include $(ARDMK_DIR)/Arduino.mk
 
 # !!! Important. You have to use make ispload to upload when using ISP programmer
