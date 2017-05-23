@@ -29,6 +29,7 @@ setup:
 #include <Timer.h>
 #include <Time.h>
 #include <MQ135.h>
+#include "eep_param.h"
 #include "rtc.h"
 #include "keypad.h"
 
@@ -76,6 +77,7 @@ LiquidCrystal_I2C lcd(0x38, 16, 2);
 idDHTLib DHTLib(TEMP_PIN, idDHTLib::DHT22);
 MQ135 co2sensor(CO2_PIN);
 Timer t;
+Param prm(0, 12);
 
 int refreshEvent, ledEvent, sensorEvent;
 int screen_id = FIRST_SCREEN;
@@ -101,6 +103,9 @@ void setup()
 	rtc_init();
 
 	init_keypad();
+
+	/* read calibration parameters from eeprom */
+	prm.readParam();
 
 	/* Configure LED pin as output */
 	pinMode(LED_PIN, OUTPUT);
@@ -364,7 +369,7 @@ static void handle_calibration_events()
 	case CALIBRATION_RZERO_STORING:
 		if (up) {
 			co2sensor.setRzero(sumr0 / 3);
-			/* TBD: store RZero value in EEPROM */
+			prm.saveParam();
 			context = DISPLAY_STANDARD;
 		}
 		if (dwn) {
