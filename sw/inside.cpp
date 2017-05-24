@@ -51,10 +51,10 @@ setup:
 #define SAVE_RTC 7
 #define MAX_SETTINGS_STATE (SAVE_RTC)
 
-#define CALIBRATION_RZERO_ENTRY 0
-#define CALIBRATION_RZERO 1
-#define CALIBRATION_REF_ATMOCO2_ENTRY 2
-#define CALIBRATION_REF_ATMOCO2 3
+#define CALIBRATION_REF_ATMOCO2_ENTRY 0
+#define CALIBRATION_REF_ATMOCO2 1
+#define CALIBRATION_RZERO_ENTRY 2
+#define CALIBRATION_RZERO 3
 #define CALIBRATION_RZERO_HEATING_ENTRY 4
 #define CALIBRATION_RZERO_HEATING 5
 #define CALIBRATION_RZERO_MEASURING 6
@@ -106,6 +106,9 @@ void setup()
 
 	/* read calibration parameters from eeprom */
 	prm.readParam();
+	co2sensor.setAtmoco2(prm.getAtmoco2());
+	co2sensor.setRload(prm.getRl());
+	co2sensor.setRzero(prm.getR0());
 
 	/* Configure LED pin as output */
 	pinMode(LED_PIN, OUTPUT);
@@ -154,8 +157,7 @@ static void get_sensor_data()
 	}
 
 	/* compensate co2 measurment with temp & humidity */
-	/* co2lvl = co2sensor.getCorrectedPPM((float) temp, (float) humidity);*/
-	co2lvl = co2sensor.getPPM();
+	co2lvl = co2sensor.getCorrectedPPM((float) temp, (float) humidity);
 }
 
 static void update_screen(LiquidCrystal_I2C lcd, float temp, float hum,
@@ -261,13 +263,6 @@ static void handle_calibration_events()
 	}
 
 	switch(calib_state) {
-	case CALIBRATION_RZERO_ENTRY:
-		lcd.clear();
-		lcd.setCursor(0, 0);
-		lcd.print("CO2 calibration:");
-		lcd.setCursor(0, 1);
-		lcd.print("start Y=up N=dwn");
-		calib_state++;
 	case CALIBRATION_REF_ATMOCO2_ENTRY:
 		co2ref = (int) co2sensor.getAtmoco2();
 		lcd.clear();
@@ -282,6 +277,7 @@ static void handle_calibration_events()
 	case CALIBRATION_REF_ATMOCO2:
 		if (valid) {
 			co2sensor.setAtmoco2(co2ref);
+			prm.setAtmoco2(co2ref);
 			lcd.noBlink();
 			calib_state++;
 		}
@@ -293,7 +289,8 @@ static void handle_calibration_events()
 			lcd.setCursor(2, 1);
 		}
 		if (dwn) {
-			co2ref = (co2ref > 0) ? co2ref-- : co2ref;
+			if (co2ref > 0)
+				co2ref--;
 			lcd.setCursor(0, 1);
 			lcd.print(co2ref);
 			lcd.print("ppm");
@@ -301,6 +298,13 @@ static void handle_calibration_events()
 		}
 
 		break;
+	case CALIBRATION_RZERO_ENTRY:
+		lcd.clear();
+		lcd.setCursor(0, 0);
+		lcd.print("CO2 calibration:");
+		lcd.setCursor(0, 1);
+		lcd.print("start Y=up N=dwn");
+		calib_state++;
 	case CALIBRATION_RZERO:
 		if (up) {
 			heatEvt = t.after(1800000, heatingCompleted);
@@ -369,6 +373,8 @@ static void handle_calibration_events()
 	case CALIBRATION_RZERO_STORING:
 		if (up) {
 			co2sensor.setRzero(sumr0 / 3);
+			prm.setR0(sumr0 / 3);
+			prm.setRl(co2sensor.getRload());
 			prm.saveParam();
 			context = DISPLAY_STANDARD;
 		}
@@ -485,6 +491,7 @@ static void handle_settings_events()
 		rtc_saveDateTime(newhour, newminute, second(),
 			newday, newmonth, newyear);
 		context = DISPLAY_CALIBRATION;
+		calib_state = CALIBRATION_REF_ATMOCO2_ENTRY;
 		lcd.noBlink();
 		return;
 	}
@@ -553,16 +560,16 @@ static void settings_screen()
 static void calibration_screen()
 {
 	switch(calib_state) {
+	case CALIBRATION_REF_ATMOCO2_ENTRY:
+	case CALIBRATION_REF_ATMOCO2:
+		break;
+	case CALIBRATION_RZERO_ENTRY:
 	case CALIBRATION_RZERO:
 		lcd.clear();
 		lcd.setCursor(0,0);
 		lcd.print("CO2 calibration:");
 		lcd.setCursor(0,1);
 		lcd.print("start Y=up N=dwn");
-		break;
-	case CALIBRATION_RZERO_ENTRY:
-	case CALIBRATION_REF_ATMOCO2_ENTRY:
-	case CALIBRATION_REF_ATMOCO2:
 		break;
 	case CALIBRATION_RZERO_HEATING:
 		lcd.clear();
@@ -584,7 +591,7 @@ static void calibration_screen()
 	case CALIBRATION_RZERO_STORING:
 		break;
 	default:
-	       calib_state = CALIBRATION_RZERO;
+	       calib_state = CALIBRATION_REF_ATMOCO2_ENTRY;
 	       break;
 	}
 }
