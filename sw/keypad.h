@@ -13,10 +13,13 @@
 #define VALID_LONG_PRESS (1 << 1)
 #define UP_PRESS (1 << 2)
 #define DOWN_PRESS (1 << 3)
+#define HEAT_TIMEOUT (1 << 4)
+#define MEAS_TIMEOUT (1 << 5)
 
 /* display context */
 #define DISPLAY_STANDARD 0 /* normal display mode */
 #define DISPLAY_SETTINGS 1 /* in settings and config context */
+#define DISPLAY_CALIBRATION 2 /* in calbration mode */
 
 extern int context;
 extern int events;
