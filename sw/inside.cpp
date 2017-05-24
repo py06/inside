@@ -307,7 +307,11 @@ static void handle_calibration_events()
 		calib_state++;
 	case CALIBRATION_RZERO:
 		if (up) {
+#ifdef CALIB_FAST
+			heatEvt = t.after(2000, heatingCompleted);
+#else
 			heatEvt = t.after(1800000, heatingCompleted);
+#endif
 			calib_state++;
 		}
 		if (dwn)
@@ -332,13 +336,21 @@ static void handle_calibration_events()
 		lcd.print("CO2 calibration:");
 		lcd.setCursor(0,1);
 		lcd.print("measuring...");
+#ifdef CALIB_FAST
+		measEvt = t.after(500, startMeasure);
+#else
 		measEvt = t.after(300000, startMeasure);
+#endif
 		calib_state++;
 	case CALIBRATION_RZERO_MEASURING_1:
 		if (meas_tmo) {
 			sumr0 = co2sensor.measureCorrectedRZero(temp,
 								humidity);
+#ifdef CALIB_FAST
+			measEvt = t.after(500, startMeasure);
+#else
 			measEvt = t.after(5000, startMeasure);
+#endif
 			calib_state++;
 		}
 		break;
@@ -346,7 +358,11 @@ static void handle_calibration_events()
 		if (meas_tmo) {
 			sumr0 += co2sensor.measureCorrectedRZero(temp,
 								 humidity);
+#ifdef CALIB_FAST
+			measEvt = t.after(500, startMeasure);
+#else
 			measEvt = t.after(5000, startMeasure);
+#endif
 			calib_state++;
 		}
 		break;
