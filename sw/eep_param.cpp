@@ -24,7 +24,8 @@ Param::Param(unsigned long base, int size)
 
 int Param::readParam()
 {
-	eeprom_read_block(&calib, &eepcalib, sizeof(struct calib));
+	eeprom_read_block((void *)&calib, (const void *)&eepcalib,
+			  sizeof(struct calib));
 #ifdef DEBUG_PARAM
 	Serial.println("read eeprom");
 	Serial.print("atmoco2=");
@@ -34,6 +35,9 @@ int Param::readParam()
 	Serial.print("rl=");
 	Serial.println(calib.rl);
 #endif
+	_atmoco2 = calib.atmoco2;
+	_r0 = calib.r0;
+	_rl = calib.rl;
 	return 0;
 }
 
@@ -51,7 +55,8 @@ int Param::saveParam()
 	Serial.print("rl=");
 	Serial.println(calib.rl);
 #endif
-	eeprom_update_block(&calib, &eepcalib, sizeof(struct calib));
+	eeprom_update_block((const void *)&calib, (void *)&eepcalib,
+			    sizeof(struct calib));
 	return 0;
 }
 
