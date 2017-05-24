@@ -143,6 +143,10 @@ static void get_sensor_data()
 {
 	int sts = 0;
 
+	/* read only when useful */
+	if (context != DISPLAY_STANDARD)
+		return;
+
 	/* Get sensor values */
 	lightlvl = analogRead(LIGHT_PIN);
 	sts = DHTLib.acquireAndWait();
