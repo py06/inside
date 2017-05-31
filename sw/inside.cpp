@@ -136,7 +136,7 @@ void setup()
 
 	ledEvent = t.oscillate(LED_PIN, 1000, HIGH);
 	refreshEvent = t.every(3000, refresh_screen);
-	sensorEvent = t.every(1000, get_sensor_data);
+	sensorEvent = t.every(2500, get_sensor_data);
 }
 
 static void get_sensor_data()
